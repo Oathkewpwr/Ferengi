@@ -503,6 +503,25 @@ public class MBot2 {
     }
 
     /**
+     * Commands the robot to drive forward continuously, arcing left whenever
+     * an obstacle is detected within the threshold distance.
+     * Returns immediately; the behavior runs in the background until stopped.
+     *
+     * @param thresholdCm  Distance in centimetres at which to begin steering (e.g. 25).
+     * @param speed        Forward speed for both motors (0–100).
+     * @param diff         Amount to reduce the inner motor to create the arc (0 to speed).
+     */
+    public void steerAround(double thresholdCm, double speed, double diff) {
+        execute("STEER_AROUND",
+                Map.of(
+                        "threshold", thresholdCm,
+                        "speed",     speed,
+                        "diff",      diff
+                )
+        );
+    }
+
+    /**
      * Flashes all LEDs a given number of times in the specified color.
      * Blocks until all flashes are complete.
      *
