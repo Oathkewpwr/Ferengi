@@ -60,6 +60,8 @@ public class MazeRobot extends RobotController {
                             mbot.stopAllBehaviors();
                             System.out.println("VICTORY");
                             state = RobotState.STOP;
+                    }else {
+                        state = RobotState.AVOID_OBJECT;
                     }
                     break;
                 // ... other cases use s.distance(), s.lineStatus(), s.lineOffset()
