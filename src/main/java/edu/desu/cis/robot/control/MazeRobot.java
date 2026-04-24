@@ -23,11 +23,11 @@ public class MazeRobot extends RobotController {
         AVOID_OBJECT,
         MOVE_OBJECT,
         COLLECT_SAMPLE,
-        RETURN,
         STOP
     }
 
     private RobotState state;
+    private boolean hasSample = false;
 
 
     public void run() {
@@ -50,11 +50,16 @@ public class MazeRobot extends RobotController {
                     System.out.println("IDENTIFY_OBJECT");
                     String color = mbot.getColorObjectFromCamera();
                     if (color.equals("blue")) {
-                        state == RobotState.AVOID_OBJECT;
+                        state = RobotState.AVOID_OBJECT;
                     } else if (color.equals("green")) {
-                        state == RobotState.MOVE_OBJECT;
+                        state = RobotState.MOVE_OBJECT;
                     }else if (color.equals("red")) {
                         state = RobotState.COLLECT_SAMPLE;
+                    }else if (color.equals("yellow") && hasSample) {
+                            mbot.stop();
+                            mbot.stopAllBehaviors();
+                            System.out.println("VICTORY");
+                            state = RobotState.STOP;
                     }
                     break;
                 // ... other cases use s.distance(), s.lineStatus(), s.lineOffset()
@@ -75,24 +80,11 @@ public class MazeRobot extends RobotController {
                     break;
                 case COLLECT_SAMPLE:
                     System.out.println("COLLECT_SAMPLE");
+                    mbot.stopAllBehaviors();
+                    mbot.stop();
                     // TODO: RETRIEVE
-                    state = RobotState.RETURN;
-                    break;
-                case RETURN:
-
-                    System.out.println("RETURN");
-                    // TODO: Go back
-                    String color = mbot.getColorObjectFromCamera();
-                    if (color.equals("blue")) {
-                        state == RobotState.AVOID_OBJECT;
-                    } else if (color.equals("green")) {
-                        state == RobotState.MOVE_OBJECT;
-                    }else if (color.equals("yellow")) {
-                        mbot.stop();
-                        mbot.stopAllBehaviors();
-                        System.out.println("VICTORY");
-                        state = RobotState.STOP;
-                    }
+                    hasSample = true;
+                    state = RobotState.CRUISE;
                     break;
 
             }
