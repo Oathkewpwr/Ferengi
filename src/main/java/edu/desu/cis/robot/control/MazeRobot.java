@@ -40,6 +40,8 @@ public class MazeRobot extends RobotController {
                     System.out.println("CRUISE");
                     //TODO: start navigating（contains avoid_crushing)
                     // Is Object Detected --> IDENTIFY_OBJECT
+                    mbot.followLine();
+                    mbot.avoidCrashing(15);
                     if (s.distance() < 20){
                         mbot.stopAllBehaviors();
                         mbot.stop();
@@ -98,7 +100,7 @@ public class MazeRobot extends RobotController {
      * @param args Command line arguments (not used).
      */
     public static void main(String[] args) {
-        try (MazeRobot amazin = new MazeRobot("StingBot")) {
+        try (MazeRobot amazin = new MazeRobot("Liang")) {
             amazin.run();
         }
     }
