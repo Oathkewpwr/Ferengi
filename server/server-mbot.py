@@ -920,13 +920,13 @@ def follow_line_behavior():
         base_speed = 30
 
         if status == 0:
-            error = -30
+            error = 30
         elif status > 1 and status < 4:
-            error = 10
+            error = -10
         elif status < 7:
-            error = 20
+            error = -20
         else:
-            error = 40
+            error = -40
 
         correction = error * kp
         em1_speed = base_speed + correction
