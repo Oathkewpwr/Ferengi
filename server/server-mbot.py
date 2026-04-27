@@ -906,7 +906,7 @@ def handle_steer_around(payload):
 def avoid_object_behavior(turn_direction, reverse_dist, forward_dist, turn_deg):
     PRIORITY = 120
     NAME = "OBJECT_AVOIDANCE"
-    # Reverse first
+    # Reverse firs
     if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
         try:
             mbot2.straight(-reverse_dist)
