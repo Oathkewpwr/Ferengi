@@ -902,6 +902,57 @@ def handle_steer_around(payload):
                              threshold, speed, diff)
     return ok_response("STEER_AROUND started")
 
+# Background behavior for avoiding an immovable object
+def avoid_object_behavior(turn_direction, reverse_dist, forward_dist, turn_deg):
+    PRIORITY = 120
+    NAME = "OBJECT_AVOIDANCE"
+    # Reverse first
+    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
+        try:
+            mbot2.straight(-reverse_dist)
+        finally:
+            arbiter.release("motors", NAME)
+    # Then turn away from the immovable obstacle
+    turn_amount = turn_deg if turn_direction == "left" else -turn_deg
+    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
+        try:
+            mbot2.turn(turn_amount)
+        finally:
+            arbiter.release("motors", NAME)
+    # After that, drive past the immovable obstacle
+    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
+        try:
+            mbot2.straight(forward_dist)
+        finally:
+            arbiter.release("motors", NAME)
+    # Finally, turn back to original direction
+    restore_amount = -turn_amount
+    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
+        try:
+            mbot2.turn(restore_amount)
+        finally:
+            arbiter.release("motors", NAME)
+    # Make the behavior stop after one avoidance
+    scheduler.stop_behavior(NAME)
+    return ok_response("Object avoided")
+
+
+@register_command("AVOID_OBJECT")
+def handle_avoid_object(payload):
+    params = payload.get("parameters", {})
+    turn_direction = params.get("turn_direction", "left")
+    reverse_dist = params.get("reverse_dist", 10.0)
+    forward_dist = params.get("forward_dist", 30.0)
+    turn_deg = params.get("turn_deg", 90)
+
+    scheduler.start_behavior(
+        "AVOID_OBJECT",
+        avoid_object_behavior,
+        turn_direction, reverse_dist, forward_dist, turn_deg
+    )
+    return ok_response("AVOID_OBJECT started")
+
+
 def follow_line_behavior():
 
     if not arbiter.acquire("line", "FOLLOW_LINE", 10, blocking=False):
