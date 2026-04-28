@@ -69,8 +69,8 @@ public class MazeRobot extends RobotController {
                 // ... other cases use s.distance(), s.lineStatus(), s.lineOffset()
                 case AVOID_OBJECT:
                     System.out.println("AVOID_OBJECT");
-                    // TODO: AVIOD, mbot.steer_around()?
-                    // Is All Clear --> CRUISE
+                    mbot.stopAllBehaviors();
+                    mbot.steerAround(25, 30, 15);
                     if (s.distance() > 30) {
                         mbot.stopAllBehaviors();
                         state = RobotState.CRUISE;
