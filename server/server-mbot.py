@@ -954,6 +954,7 @@ def handle_avoid_object(payload):
 
 
 def follow_line_behavior():
+    global last_error
 
     if not arbiter.acquire("line", "FOLLOW_LINE", 10, blocking=False):
         return
@@ -967,17 +968,29 @@ def follow_line_behavior():
         return
     try:
 
-        kp = 0.4
+        kp = 0.5
         base_speed = 30
 
-        if status == 0:
-            error = -30
-        elif status > 1 and status < 4:
+        if status == 15:
+            error = 60
+        elif status == 14:
             error = 10
-        elif status < 7:
-            error = 20
+        elif status > 11 and status < 14:
+            error = 0
+        elif status == 9 or status == 11:
+            error = -30
+        elif status == 7:
+            error = -110
+        elif status == 3:
+            error = -110
+        elif status == 1:
+            error = -110
+        elif status == 0:
+            error = -110
         else:
-            error = 40
+            error = last_error
+
+        last_error = error
 
         correction = error * kp
         em1_speed = base_speed + correction
