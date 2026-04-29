@@ -922,11 +922,10 @@ def handle_flash_led(payload):
                 time.sleep(delay)
             return ok_response("Flash complete")
         finally:
-            arbiter.release("led", "FLASH_LED"
+            arbiter.release("led", "FLASH_LED")
 
-last_error = 0
+
 def follow_line_behavior():
-    global last_error
 
     if not arbiter.acquire("line", "FOLLOW_LINE", 10, blocking=False):
         return
@@ -943,27 +942,18 @@ def follow_line_behavior():
         kp = 0.5
         base_speed = 30
 
-        if status == 15:
-            error = 60
-        elif status == 14:
-            error = 10
-        elif status > 11 and status < 14:
-            error = 0
-        elif status == 9 or status == 11:
-            error = -30
-        elif status == 7:
-            error = -110
-        elif status == 3:
-            error = -110
+        if status == 0:
+            error = 50
         elif status == 1:
-            error = -110
-        elif status == 0:
-            error = -110
+            error = 0
+        elif status > 1 and status < 4:
+            error = -10
+        elif status < 7:
+            error = -20
+        elif status >= 14:
+            error = -75
         else:
-            error = last_error
-
-        last_error = error
-
+            error = -40
         correction = error * kp
         em1_speed = base_speed + correction
         em1_speed = min(max(em1_speed, -50), 50)
