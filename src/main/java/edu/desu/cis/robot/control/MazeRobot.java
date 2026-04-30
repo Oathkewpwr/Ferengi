@@ -28,6 +28,8 @@ public class MazeRobot extends RobotController {
 
     private RobotState state;
     private boolean hasSample = false;
+    private boolean cruisingStarted = false;
+    private boolean avoidingStarted = false;
 
 
     public void run() {
@@ -38,13 +40,15 @@ public class MazeRobot extends RobotController {
             switch (state) {
                 case CRUISE:
                     System.out.println("CRUISE");
-                    //TODO: start navigating（contains avoid_crushing)
-                    // Is Object Detected --> IDENTIFY_OBJECT
-                    mbot.followLine();
-                    mbot.avoidCrashing(15);
-                    if (s.distance() < 20){
+                    if (!cruisingStarted) {
+                        mbot.followLine();
+                        mbot.avoidCrashing(8);
+                        cruisingStarted = true;
+                    }
+                    if (s.distance() < 10) {
                         mbot.stopAllBehaviors();
                         mbot.stop();
+                        cruisingStarted = false;
                         state = RobotState.IDENTIFY_OBJECT;
                     }
                     break;
@@ -69,25 +73,55 @@ public class MazeRobot extends RobotController {
                 // ... other cases use s.distance(), s.lineStatus(), s.lineOffset()
                 case AVOID_OBJECT:
                     System.out.println("AVOID_OBJECT");
+                    /*mbot.steerAround(10, 30, 28, false);
+                    try { Thread.sleep(1200); }
+                    catch (InterruptedException e) {}
+
                     mbot.stopAllBehaviors();
-                    mbot.steerAround(25, 30, 15);
-                    if (s.distance() > 30) {
+                    mbot.moveAndTurn(20, 20, true);
+                    try { Thread.sleep(1200); }
+                    catch (InterruptedException e) {}*/
+                    mbot.moveAndTurn(30,25, false);
+                    try { Thread.sleep(1000); }
+                    catch (InterruptedException e) {}
+                    mbot.straight(8);
+
+                    mbot.stopAllBehaviors();
+                    mbot.moveAndTurn(30, 20, true);
+                    try { Thread.sleep(1800); }
+                    catch (InterruptedException e) {}
+                    mbot.stopAllBehaviors();
+                    s = awaitNewData();
+                    while (s.lineStatus() == 0) {
+                        mbot.moveAndTurn(30, 20, true);
+                        try { Thread.sleep(200); }
+                        catch (InterruptedException e) {}
                         mbot.stopAllBehaviors();
-                        state = RobotState.CRUISE;
+                        s = awaitNewData();
                     }
+                    cruisingStarted = false;
+                    state = RobotState.CRUISE;
                     break;
                 case MOVE_OBJECT:
                     System.out.println("MOVE_OBJECT");
-                    //TODO: PUSH
                     mbot.stopAllBehaviors();
+                    mbot.stop();
+                    mbot.pushObject();
+                    mbot.stopAllBehaviors();
+                    cruisingStarted = false;
                     state = RobotState.CRUISE; // Is All Clear --> CRUISE
                     break;
                 case COLLECT_SAMPLE:
                     System.out.println("COLLECT_SAMPLE");
                     mbot.stopAllBehaviors();
                     mbot.stop();
-                    // TODO: RETRIEVE
+                    mbot.turnRight(360);
+                    mbot.flashLed(5, 255, 0, 0, 0.3);
+                    mbot.flashLed(3, 0, 255, 0, 0.3);
+                    mbot.straight(5);
+                    mbot.straight(-5);
                     hasSample = true;
+                    cruisingStarted = false;
                     state = RobotState.CRUISE;
                     break;
 

@@ -862,7 +862,7 @@ def handle_stop_at_line(payload):
     return ok_response("STOP_AT_LINE behavior started")
 
 # ── STEER_AROUND behavior ──────────────────────────────────────────────────
-def steer_around_behavior(threshold, speed, diff):
+def steer_around_behavior(threshold, speed, diff, is_left):
     """
     Called repeatedly by the scheduler.
     Reads the ultrasonic sensor and either drives straight or arcs left.
@@ -883,7 +883,7 @@ def steer_around_behavior(threshold, speed, diff):
             mbot2.drive_speed(speed, -speed)
         else:
             # Obstacle detected — arc left
-            move_and_turn(speed=speed, diff=diff, is_left=True)
+            move_and_turn(speed=speed, diff=diff, is_left=is_left)
     finally:
         arbiter.release("motors", "STEER_AROUND")
 @register_command("STEER_AROUND")
@@ -892,6 +892,7 @@ def handle_steer_around(payload):
     threshold = float(params.get("threshold", 25))
     speed     = float(params.get("speed",     40))
     diff      = float(params.get("diff",      20))
+    is_left = bool(params.get("is_left", True))
     if speed < 0 or speed > 100:
         return error_response("INVALID_PARAM",
                               "speed must be between 0 and 100")
@@ -899,7 +900,7 @@ def handle_steer_around(payload):
         return error_response("INVALID_PARAM",
                               "diff must be >= 0 and less than speed")
     scheduler.start_behavior("STEER_AROUND", steer_around_behavior,
-                             threshold, speed, diff)
+                             threshold, speed, diff, is_left)
     return ok_response("STEER_AROUND started")
 
 @register_command("FLASH_LED")
@@ -967,3 +968,35 @@ def follow_line_behavior():
 def handle_follow_line(payload):
     scheduler.start_behavior("FOLLOW_LINE", follow_line_behavior)
     return ok_response("Following Line")
+
+@register_command("PUSH_OBJECT")
+def handle_push_object(payload):
+    if not arbiter.acquire("ultrasonic", "PUSH_OBJECT", 100):
+        return error_response("RESOURCE_BUSY", "Ultrasonic busy")
+    try:
+        distance = mbuild.ultrasonic2.get()
+    finally:
+        arbiter.release("ultrasonic", "PUSH_OBJECT")
+
+    if distance > 20:
+        return ok_response("No object detected")
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            mbot2.turn(180, wait=True)
+
+            mbot2.forward(-40, distance * 1.3, "cm", wait=True)
+
+            move_and_turn(speed=40, diff=20, is_left=True)
+            time.sleep(3)
+            mbot2.forward(0, 0, "cm", wait=True)
+
+            mbot2.forward(40, distance * 1.3, "cm", wait=True)
+
+            mbot2.turn(180, wait=True)
+
+            return ok_response("Object pushed")
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+    return error_response("RESOURCE_BUSY", "Motors busy")
