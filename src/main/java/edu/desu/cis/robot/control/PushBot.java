@@ -22,7 +22,7 @@ public class PushBot extends RobotController {
     }
 
     public static void main(String[] args) {
-        try (PushBot robot = new PushBot("Liang")) {
+        try (PushBot robot = new PushBot("Odumosu")) {
             robot.run();
         }
     }
