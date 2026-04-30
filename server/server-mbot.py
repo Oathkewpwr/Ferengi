@@ -1005,3 +1005,50 @@ def follow_line_behavior():
 def handle_follow_line(payload):
     scheduler.start_behavior("FOLLOW_LINE", follow_line_behavior)
     return ok_response("Following Line")
+
+def push_object_behavior():
+    if not arbiter.acquire("ultrasonic", "PUSH_OBJECT", 100, blocking=False):
+        return
+    try:
+        distance = mbuild.ultrasonic2.get()
+    finally:
+        arbiter.release("ultrasonic", "PUSH_OBJECT")
+
+    if distance <= 0 or distance > 15:
+        return
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            turn(180)
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            mbot2.straight(-(distance + 40))
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            turn(-90)
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            mbot2.straight(20)
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
+        try:
+            turn(-90)
+        finally:
+            arbiter.release("motors", "PUSH_OBJECT")
+
+@register_command("PUSH_OBJECT")
+def handle_push_object(payload):
+    push_object_behavior()
+    return ok_response("Push object complete")
+    return ok_response("Following Line")

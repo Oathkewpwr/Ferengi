@@ -549,6 +549,12 @@ public class MBot2 {
     public void followLine() {
         execute("FOLLOW_LINE", null);
     }
+    /**
+     * Commands the robot to push an object out of the way.
+     */
+    public void pushObject() {
+        execute("PUSH_OBJECT", null);
+    }
 
     /**
      * Starts the AVOID_OBJECT behavior on the mbot2.
