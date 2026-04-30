@@ -556,4 +556,20 @@ public class MBot2 {
         execute("PUSH_OBJECT", null);
     }
 
+    /**
+     * Starts the AVOID_OBJECT behavior on the mbot2.
+     * The robot reverses, turns away from the obstacle,
+     * moves past it, then turns back to its original direction.
+     */
+    public void avoidObject(String turnDirection, double reverseDist, double forwardDist, int turnDeg){
+        execute("AVOID_OBJECT",
+                Map.of(
+                        "turn_direction", turnDirection,
+                        "reverse_dist", reverseDist,
+                        "forward_dist", forwardDist,
+                        "turn_deg", turnDeg
+                )
+        );
+    }
+
 }
