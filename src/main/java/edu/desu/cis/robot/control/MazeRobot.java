@@ -29,7 +29,6 @@ public class MazeRobot extends RobotController {
     private RobotState state;
     private boolean hasSample = false;
     private boolean cruisingStarted = false;
-    private boolean avoidingStarted = false;
 
 
     public void run() {
@@ -55,13 +54,13 @@ public class MazeRobot extends RobotController {
                 case IDENTIFY_OBJECT:
                     System.out.println("IDENTIFY_OBJECT");
                     String color = mbot.getColorObjectFromCamera();
-                    if (color.equals("blue")) {
+                    if (color.equals("BLUE")) {
                         state = RobotState.AVOID_OBJECT;
-                    } else if (color.equals("green")) {
+                    } else if (color.equals("GREEN")) {
                         state = RobotState.MOVE_OBJECT;
-                    }else if (color.equals("red")) {
+                    }else if (color.equals("RED") && !hasSample) {
                         state = RobotState.COLLECT_SAMPLE;
-                    }else if (color.equals("yellow") && hasSample) {
+                    }else if (color.equals("YELLOW") && hasSample) {
                             mbot.stop();
                             mbot.stopAllBehaviors();
                             System.out.println("VICTORY");
@@ -81,20 +80,21 @@ public class MazeRobot extends RobotController {
                     mbot.moveAndTurn(20, 20, true);
                     try { Thread.sleep(1200); }
                     catch (InterruptedException e) {}*/
-                    mbot.moveAndTurn(30,25, false);
+                    mbot.moveAndTurn(30,25, true);
                     try { Thread.sleep(1000); }
                     catch (InterruptedException e) {}
                     mbot.straight(8);
 
                     mbot.stopAllBehaviors();
-                    mbot.moveAndTurn(30, 20, true);
+                    mbot.moveAndTurn(30, 21, false);
                     try { Thread.sleep(1800); }
                     catch (InterruptedException e) {}
                     mbot.stopAllBehaviors();
+                    mbot.straight(5);
                     s = awaitNewData();
-                    while (s.lineStatus() == 0) {
-                        mbot.moveAndTurn(30, 20, true);
-                        try { Thread.sleep(200); }
+                    while (s.lineStatus() == 0 || s.lineStatus() == 8) {
+                        mbot.moveAndTurn(20, 15, false);
+                        try { Thread.sleep(155); }
                         catch (InterruptedException e) {}
                         mbot.stopAllBehaviors();
                         s = awaitNewData();
@@ -115,13 +115,15 @@ public class MazeRobot extends RobotController {
                     System.out.println("COLLECT_SAMPLE");
                     mbot.stopAllBehaviors();
                     mbot.stop();
-                    mbot.turnRight(360);
+                    mbot.turn(180);
+                    mbot.turn(180);
                     mbot.flashLed(5, 255, 0, 0, 0.3);
                     mbot.flashLed(3, 0, 255, 0, 0.3);
                     mbot.straight(5);
                     mbot.straight(-5);
                     hasSample = true;
                     cruisingStarted = false;
+                    try { Thread.sleep(500); } catch (InterruptedException e) {}
                     state = RobotState.CRUISE;
                     break;
 

@@ -481,8 +481,9 @@ public class MBot2 {
         execute("STOP_ALL_BEHAVIORS", null);
     }
 
-
-
+    public void turn(int degrees) {
+        execute("TURN", Map.of("degrees", degrees));
+    }
 
 
     private CommandResult<JsonNode> execute(String command, Map<String,Object> params) {
@@ -560,5 +561,6 @@ public class MBot2 {
     public void pushObject() {
         execute("PUSH_OBJECT", null);
     }
+
 
 }

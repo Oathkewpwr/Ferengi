@@ -983,17 +983,14 @@ def handle_push_object(payload):
 
     if arbiter.acquire("motors", "PUSH_OBJECT", 100):
         try:
-            mbot2.turn(180, wait=True)
-
-            mbot2.forward(-40, distance * 1.3, "cm", wait=True)
-
-            move_and_turn(speed=40, diff=20, is_left=True)
+            turn(180)
+            mbot2.straight(-(distance * 1.3))
+            move_and_turn(speed=-40, diff=20, is_left=False)
             time.sleep(3)
-            mbot2.forward(0, 0, "cm", wait=True)
-
-            mbot2.forward(40, distance * 1.3, "cm", wait=True)
-
-            mbot2.turn(180, wait=True)
+            mbot2.drive_speed(0, 0)
+            mbot2.straight(distance * 1.3)
+            mbot2.straight(5)
+            turn(90)
 
             return ok_response("Object pushed")
         finally:
