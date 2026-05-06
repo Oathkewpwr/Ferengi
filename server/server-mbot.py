@@ -862,7 +862,7 @@ def handle_stop_at_line(payload):
     return ok_response("STOP_AT_LINE behavior started")
 
 # ── STEER_AROUND behavior ──────────────────────────────────────────────────
-def steer_around_behavior(threshold, speed, diff):
+def steer_around_behavior(threshold, speed, diff, is_left):
     """
     Called repeatedly by the scheduler.
     Reads the ultrasonic sensor and either drives straight or arcs left.
@@ -883,7 +883,7 @@ def steer_around_behavior(threshold, speed, diff):
             mbot2.drive_speed(speed, -speed)
         else:
             # Obstacle detected — arc left
-            move_and_turn(speed=speed, diff=diff, is_left=True)
+            move_and_turn(speed=speed, diff=diff, is_left=is_left)
     finally:
         arbiter.release("motors", "STEER_AROUND")
 @register_command("STEER_AROUND")
@@ -892,6 +892,7 @@ def handle_steer_around(payload):
     threshold = float(params.get("threshold", 25))
     speed     = float(params.get("speed",     40))
     diff      = float(params.get("diff",      20))
+    is_left = bool(params.get("is_left", True))
     if speed < 0 or speed > 100:
         return error_response("INVALID_PARAM",
                               "speed must be between 0 and 100")
@@ -899,62 +900,33 @@ def handle_steer_around(payload):
         return error_response("INVALID_PARAM",
                               "diff must be >= 0 and less than speed")
     scheduler.start_behavior("STEER_AROUND", steer_around_behavior,
-                             threshold, speed, diff)
+                             threshold, speed, diff, is_left)
     return ok_response("STEER_AROUND started")
 
-# Background behavior for avoiding an immovable object
-def avoid_object_behavior(turn_direction, reverse_dist, forward_dist, turn_deg):
-    PRIORITY = 120
-    NAME = "OBJECT_AVOIDANCE"
-    # Reverse first
-    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
-        try:
-            mbot2.straight(-reverse_dist)
-        finally:
-            arbiter.release("motors", NAME)
-    # Then turn away from the immovable obstacle
-    turn_amount = turn_deg if turn_direction == "left" else -turn_deg
-    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
-        try:
-            mbot2.turn(turn_amount)
-        finally:
-            arbiter.release("motors", NAME)
-    # After that, drive past the immovable obstacle
-    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
-        try:
-            mbot2.straight(forward_dist)
-        finally:
-            arbiter.release("motors", NAME)
-    # Finally, turn back to original direction
-    restore_amount = -turn_amount
-    if arbiter.acquire("motors", NAME, PRIORITY, blocking = False):
-        try:
-            mbot2.turn(restore_amount)
-        finally:
-            arbiter.release("motors", NAME)
-    # Make the behavior stop after one avoidance
-    scheduler.stop_behavior(NAME)
-    return ok_response("Object avoided")
-
-
-@register_command("AVOID_OBJECT")
-def handle_avoid_object(payload):
+@register_command("FLASH_LED")
+def handle_flash_led(payload):
     params = payload.get("parameters", {})
-    turn_direction = params.get("turn_direction", "left")
-    reverse_dist = params.get("reverse_dist", 10.0)
-    forward_dist = params.get("forward_dist", 30.0)
-    turn_deg = params.get("turn_deg", 90)
-
-    scheduler.start_behavior(
-        "AVOID_OBJECT",
-        avoid_object_behavior,
-        turn_direction, reverse_dist, forward_dist, turn_deg
-    )
-    return ok_response("AVOID_OBJECT started")
+    times  = int(params.get("times", 3))
+    r      = int(params.get("red",   0))
+    g      = int(params.get("green", 0))
+    b      = int(params.get("blue",  255))
+    delay  = float(params.get("delay", 0.3))
+    if times < 1 or times > 20:
+        return error_response("INVALID_PARAM",
+                              "times must be between 1 and 20")
+    if arbiter.acquire("led", "FLASH_LED", 50):
+        try:
+            for _ in range(times):
+                cyberpi.led.on(r, g, b, id="all")
+                time.sleep(delay)
+                cyberpi.led.off(id="all")
+                time.sleep(delay)
+            return ok_response("Flash complete")
+        finally:
+            arbiter.release("led", "FLASH_LED")
 
 
 def follow_line_behavior():
-    global last_error
 
     if not arbiter.acquire("line", "FOLLOW_LINE", 10, blocking=False):
         return
@@ -971,27 +943,18 @@ def follow_line_behavior():
         kp = 0.5
         base_speed = 30
 
-        if status == 15:
-            error = 60
-        elif status == 14:
-            error = 10
-        elif status > 11 and status < 14:
-            error = 0
-        elif status == 9 or status == 11:
-            error = -30
-        elif status == 7:
-            error = -110
-        elif status == 3:
-            error = -110
+        if status == 0:
+            error = 50
         elif status == 1:
-            error = -110
-        elif status == 0:
-            error = -110
+            error = 0
+        elif status > 1 and status < 4:
+            error = -10
+        elif status < 7:
+            error = -20
+        elif status >= 14:
+            error = -75
         else:
-            error = last_error
-
-        last_error = error
-
+            error = -40
         correction = error * kp
         em1_speed = base_speed + correction
         em1_speed = min(max(em1_speed, -50), 50)
@@ -1006,49 +969,31 @@ def handle_follow_line(payload):
     scheduler.start_behavior("FOLLOW_LINE", follow_line_behavior)
     return ok_response("Following Line")
 
-def push_object_behavior():
-    if not arbiter.acquire("ultrasonic", "PUSH_OBJECT", 100, blocking=False):
-        return
+@register_command("PUSH_OBJECT")
+def handle_push_object(payload):
+    if not arbiter.acquire("ultrasonic", "PUSH_OBJECT", 100):
+        return error_response("RESOURCE_BUSY", "Ultrasonic busy")
     try:
         distance = mbuild.ultrasonic2.get()
     finally:
         arbiter.release("ultrasonic", "PUSH_OBJECT")
 
-    if distance <= 0 or distance > 15:
-        return
+    if distance > 20:
+        return ok_response("No object detected")
 
     if arbiter.acquire("motors", "PUSH_OBJECT", 100):
         try:
             turn(180)
+            mbot2.straight(-(distance * 1.3))
+            move_and_turn(speed=-40, diff=20, is_left=False)
+            time.sleep(3)
+            mbot2.drive_speed(0, 0)
+            mbot2.straight(distance * 1.3)
+            mbot2.straight(5)
+            turn(90)
+
+            return ok_response("Object pushed")
         finally:
             arbiter.release("motors", "PUSH_OBJECT")
 
-    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
-        try:
-            mbot2.straight(-(distance + 40))
-        finally:
-            arbiter.release("motors", "PUSH_OBJECT")
-
-    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
-        try:
-            turn(-90)
-        finally:
-            arbiter.release("motors", "PUSH_OBJECT")
-
-    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
-        try:
-            mbot2.straight(20)
-        finally:
-            arbiter.release("motors", "PUSH_OBJECT")
-
-    if arbiter.acquire("motors", "PUSH_OBJECT", 100):
-        try:
-            turn(-90)
-        finally:
-            arbiter.release("motors", "PUSH_OBJECT")
-
-@register_command("PUSH_OBJECT")
-def handle_push_object(payload):
-    push_object_behavior()
-    return ok_response("Push object complete")
-    return ok_response("Following Line")
+    return error_response("RESOURCE_BUSY", "Motors busy")

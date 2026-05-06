@@ -481,8 +481,9 @@ public class MBot2 {
         execute("STOP_ALL_BEHAVIORS", null);
     }
 
-
-
+    public void turn(int degrees) {
+        execute("TURN", Map.of("degrees", degrees));
+    }
 
 
     private CommandResult<JsonNode> execute(String command, Map<String,Object> params) {
@@ -511,14 +512,13 @@ public class MBot2 {
      * @param speed        Forward speed for both motors (0–100).
      * @param diff         Amount to reduce the inner motor to create the arc (0 to speed).
      */
-    public void steerAround(double thresholdCm, double speed, double diff) {
-        execute("STEER_AROUND",
-                Map.of(
-                        "threshold", thresholdCm,
-                        "speed",     speed,
-                        "diff",      diff
-                )
-        );
+    public void steerAround(double thresholdCm, double speed, double diff, boolean isLeft) {
+        execute("STEER_AROUND", Map.of(
+                "threshold", thresholdCm,
+                "speed", speed,
+                "diff", diff,
+                "is_left", isLeft
+        ));
     }
 
     /**
@@ -549,27 +549,18 @@ public class MBot2 {
     public void followLine() {
         execute("FOLLOW_LINE", null);
     }
-    /**
-     * Commands the robot to push an object out of the way.
-     */
+    public void moveAndTurn(double speed, double diff, boolean isLeft) {
+        execute("MOVE_AND_TURN", Map.of(
+                "speed", speed,
+                "duration", -1,
+                "diff", diff,
+                "is_left", isLeft
+        ));
+    }
+
     public void pushObject() {
         execute("PUSH_OBJECT", null);
     }
 
-    /**
-     * Starts the AVOID_OBJECT behavior on the mbot2.
-     * The robot reverses, turns away from the obstacle,
-     * moves past it, then turns back to its original direction.
-     */
-    public void avoidObject(String turnDirection, double reverseDist, double forwardDist, int turnDeg){
-        execute("AVOID_OBJECT",
-                Map.of(
-                        "turn_direction", turnDirection,
-                        "reverse_dist", reverseDist,
-                        "forward_dist", forwardDist,
-                        "turn_deg", turnDeg
-                )
-        );
-    }
 
 }
