@@ -60,8 +60,7 @@ public class MazeRobot extends RobotController {
                         state = RobotState.MOVE_OBJECT;
                     }else if (color.equals("RED") && !hasSample) {
                         state = RobotState.COLLECT_SAMPLE;
-                    }else if (color.equals("YELLOW")
-                    ) {
+                    }else if (color.equals("YELLOW" ) && hasSample) {
                             mbot.stop();
                             mbot.stopAllBehaviors();
                             System.out.println("VICTORY");
@@ -93,7 +92,7 @@ public class MazeRobot extends RobotController {
                     mbot.stopAllBehaviors();
                     mbot.straight(5);
                     s = awaitNewData();
-                    while (s.lineStatus() == 0 || s.lineStatus() == 8) {
+                    while (s.lineStatus() == 0) {
                         mbot.moveAndTurn(20, 15, false);
                         try { Thread.sleep(155); }
                         catch (InterruptedException e) {}
